@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="description" content="365-Day Trading & Compounding Challenge - Real-time cross-device trading journal, 5%-7% daily compounding calculator, and milestone tracker." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="365 Trade" />
+  <title>365-Day Trading & Compounding Challenge</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          colors: {
+            terminal: {
+              bg: '#090d16',
+              card: '#111827',
+              elevated: '#161f32',
+              border: '#1e293b'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    /* Custom Range Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #10b981 0%, #f59e0b 100%);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -6px;
+      background-color: #f8fafc;
+      border: 3px solid #10b981;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Hide number spinners */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+      50% { box-shadow: 0 0 18px 2px rgba(245, 158, 11, 0.55); }
+    }
+    .milestone-unlocked-glow {
+      animation: pulseGlow 2.8s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- Confetti Canvas Overlay -->
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 hidden"></canvas>
+
+  <!-- Toast Notification Banner -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] sm:w-auto pointer-events-none"></div>
+
+  <!-- Sticky Top App Header -->
+  <header class="sticky top-0 z-30 bg-[#090d16]/90 backdrop-blur-md border-b border-slate-800/90">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-950/60 border border-emerald-400/30 shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-bold tracking-tight text-white leading-tight">365-Day Trading Challenge</h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              INR COMPOUNDING
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">Discipline • Risk Management • Daily Compounding Terminal</p>
+        </div>
+      </div>
+
+      <!-- Right Controls: Sync Badge, Install PWA, Cloud Auth -->
+      <div class="flex items-center gap-2">
+        <!-- Cloud Sync Status Pill -->
+        <div id="syncStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400 transition-all">
+          <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="syncText">Saved to Cloud ✓</span>
+        </div>
+
+        <!-- Install PWA Button -->
+        <button id="installPwaBtn" onclick="handleInstallClick()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition active:scale-95" title="Install App on Android or Windows">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden sm:inline">Install App</span>
+        </button>
+
+        <!-- Account / Firebase Setup Button -->
+        <button id="authModalBtn" onclick="openAuthModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+          </svg>
+          <span id="authBtnLabel">Cloud Sync</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5">
+
+    <!-- 2. AUTOMATIC TOP DASHBOARD (LIVE KPIs) -->
+    <section aria-label="Live Trading Performance Dashboard" class="space-y-3">
+      <!-- Top Row: 4 Primary Financial KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Starting Capital -->
+        <div class="bg-[#111827] border border-slate-800/90 rounded-2xl p-3.5 sm:p-4 relative group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-slate-400">Starting Capital</span>
+            <button onclick="openCapitalModal()" class="text-[11px] text-slate-400 hover:text-emerald-400 px-1.5 py-0.5 rounded bg-slate-800/70 transition" title="Edit Starting Capital">
+              Edit
+            </button>
+          </div>
+          <div id="kpiStartingCapital" class="text-lg sm:text-2xl font-bold font-mono text-white tabular-nums">₹10,000.00</div>
+          <div id="kpiTargetRateLabel" class="text-[11px] text-slate-400 mt-1">Daily Target: <span class="text-amber-400 font-semibold">6.0%</span></div>
+        </div>
+
+        <!-- Current Capital -->
+        <div class="bg-[#111827] border border-slate-800/90 rounded-2xl p-3.5 sm:p-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-slate-400">Current Capital</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <div id="kpiCurrentCapital" class="text-lg sm:text-2xl font-bold font-mono text-white tabular-nums">₹10,000.00</div>
+          <div id="kpiCompactCapital" class="text-[11px] text-slate-400 mt-1">Base + Realized P&L</div>
+        </div>
+
+        <!-- Total Profit/Loss -->
+        <div class="bg-[#111827] border border-slate-800/90 rounded-2xl p-3.5 sm:p-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-slate-400">Total Profit / Loss</span>
+            <span id="kpiRoiBadge" class="px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/15 text-emerald-400">+0.00%</span>
+          </div>
+          <div id="kpiTotalPnl" class="text-lg sm:text-2xl font-bold font-mono text-emerald-400 tabular-nums">₹0.00</div>
+          <div id="kpiWinRateMini" class="text-[11px] text-slate-400 mt-1">Overall ROI & Net Return</div>
+        </div>
+
+        <!-- Completed & Remaining Days -->
+        <div class="bg-[#111827] border border-slate-800/90 rounded-2xl p-3.5 sm:p-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-slate-400">Completed Days</span>
+            <span id="kpiRemainingBadge" class="text-[11px] font-medium text-slate-400">365 left</span>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiCompletedDays" class="text-lg sm:text-2xl font-bold font-mono text-white tabular-nums">0</span>
+            <span class="text-xs sm:text-sm font-mono text-slate-400">/ 365</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
+            <div id="kpiProgressBar" class="bg-gradient-to-r from-emerald-500 to-amber-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: Remaining Days, Best Day, Worst Day -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Remaining Days Card -->
+        <div class="bg-[#111827]/90 border border-slate-800/80 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400 uppercase tracking-wider">Remaining Days</div>
+              <div id="kpiRemainingDays" class="text-sm sm:text-base font-bold font-mono text-slate-100 tabular-nums">365 Days</div>
+            </div>
+          </div>
+          <span id="kpiCompletionPct" class="text-xs font-mono text-slate-400">0.0% Done</span>
+        </div>
+
+        <!-- Best Day Card -->
+        <div class="bg-[#111827]/90 border border-slate-800/80 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400 uppercase tracking-wider">Best Day</div>
+              <div id="kpiBestDay" class="text-sm sm:text-base font-bold font-mono text-emerald-400 tabular-nums">—</div>
+            </div>
+          </div>
+          <span id="kpiBestDayNum" class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 text-xs font-mono">No data</span>
+        </div>
+
+        <!-- Worst Day Card -->
+        <div class="bg-[#111827]/90 border border-slate-800/80 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400 uppercase tracking-wider">Worst Day</div>
+              <div id="kpiWorstDay" class="text-sm sm:text-base font-bold font-mono text-red-400 tabular-nums">—</div>
+            </div>
+          </div>
+          <span id="kpiWorstDayNum" class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-300 text-xs font-mono">No data</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Primary Tab Navigation -->
+    <nav class="flex p-1 bg-[#111827] border border-slate-800 rounded-2xl gap-1 overflow-x-auto" role="tablist">
+      <button id="tabBtnJournal" onclick="switchTab('journal')" role="tab" class="flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition bg-emerald-600 text-white shadow-md">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        <span>365-Day Journal</span>
+      </button>
+      <button id="tabBtnCalculator" onclick="switchTab('calculator')" role="tab" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        <span>Compounding Table</span>
+      </button>
+      <button id="tabBtnAnalytics" onclick="switchTab('analytics')" role="tab" class="flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <span>Analytics & Export</span>
+      </button>
+    </nav>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: INTERACTIVE 365-DAY TRADING CHECKLIST & JOURNAL              -->
+    <!-- =================================================================== -->
+    <section id="panelJournal" class="space-y-4">
+      <!-- 4. MILESTONES TROPHY BAR -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏆</span>
+            <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400">50-Day Milestones Trophy Bar</h2>
+          </div>
+          <span id="nextMilestoneHint" class="text-xs text-slate-400">Next milestone: <strong class="text-white">50 Completed Days</strong></span>
+        </div>
+        <div id="milestonesTrophyGrid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Journal Filters, Search & Phase Selector -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl p-3.5 sm:p-4 space-y-3">
+        <!-- Top Bar: Status Filters + Jump to Day -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <!-- Status Filter Pills -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="journalFilterPills">
+            <button data-filter="all" onclick="setJournalFilter('all')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white shrink-0">All (365)</button>
+            <button data-filter="completed" onclick="setJournalFilter('completed')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">Completed</button>
+            <button data-filter="notrade" onclick="setJournalFilter('notrade')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">No Trade</button>
+            <button data-filter="missed" onclick="setJournalFilter('missed')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">Missed</button>
+            <button data-filter="profit" onclick="setJournalFilter('profit')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-emerald-400 hover:bg-slate-700 shrink-0">Profitable Days</button>
+            <button data-filter="loss" onclick="setJournalFilter('loss')" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-red-400 hover:bg-slate-700 shrink-0">Loss Days</button>
+          </div>
+
+          <!-- Search Notes & Jump to Day -->
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1 sm:w-56">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input id="journalSearchInput" type="text" oninput="handleJournalSearch(this.value)" placeholder="Search notes, setup, pair..." class="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <input id="journalJumpInput" type="number" min="1" max="365" placeholder="Day #" class="w-16 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+              <button onclick="jumpToJournalDay()" class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold transition">Go</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fast Phase / Block Selector (Keeps mobile scrolling super fast) -->
+        <div id="journalPhaseBar" class="flex items-center gap-1.5 overflow-x-auto pt-1 border-t border-slate-800/80">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase mr-1 shrink-0">Block:</span>
+          <!-- Phase buttons injected via JS -->
+        </div>
+      </div>
+
+      <!-- Journal Day Cards List -->
+      <div id="journalCardsContainer" class="space-y-3">
+        <!-- Dynamically rendered Day cards -->
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: CORE FINANCIAL LOGIC & COMPOUNDING CALCULATOR                -->
+    <!-- =================================================================== -->
+    <section id="panelCalculator" class="hidden space-y-4">
+      <!-- Calculator Controls Card -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>Daily Compounding Roadmap (Day 1 – Day 365)</span>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 text-xs font-mono" id="calcRateBadge">6.0% / day</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Adjust your daily compounding target rate between 5.0% and 7.0% or compare all three scenarios side by side.</p>
+          </div>
+
+          <!-- Comparison Toggle -->
+          <label class="inline-flex items-center gap-2.5 cursor-pointer bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-700/80 self-start">
+            <input type="checkbox" id="compareRatesToggle" onchange="toggleRateComparison(this.checked)" class="sr-only peer" />
+            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all relative peer-checked:bg-amber-500"></div>
+            <span class="text-xs font-semibold text-slate-200">Compare 5% vs 6% vs 7%</span>
+          </label>
+        </div>
+
+        <!-- Rate Slider & Preset Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+          <div class="md:col-span-7 space-y-2">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-slate-400">Daily Target Rate Slider</span>
+              <span id="sliderRateValue" class="font-mono font-bold text-amber-400 text-sm">6.0%</span>
+            </div>
+            <input id="dailyRateSlider" type="range" min="5.0" max="7.0" step="0.1" value="6.0" oninput="updateTargetRate(this.value)" class="w-full" />
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>5.0% (Conservative)</span>
+              <span>6.0% (Balanced)</span>
+              <span>7.0% (Aggressive)</span>
+            </div>
+          </div>
+
+          <div class="md:col-span-5 flex flex-wrap gap-2 justify-start md:justify-end">
+            <button onclick="updateTargetRate(5.0)" class="rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500" data-rate="5">5.0%</button>
+            <button onclick="updateTargetRate(5.5)" class="rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500" data-rate="5.5">5.5%</button>
+            <button onclick="updateTargetRate(6.0)" class="rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-emerald-600/20 border-emerald-500 text-emerald-300" data-rate="6">6.0%</button>
+            <button onclick="updateTargetRate(6.5)" class="rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500" data-rate="6.5">6.5%</button>
+            <button onclick="updateTargetRate(7.0)" class="rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500" data-rate="7">7.0%</button>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Comparison Cards (5%, 6%, 7%) -->
+        <div id="rateComparisonPanel" class="hidden grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Quick Jump-to-Day Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs font-semibold text-slate-400 mr-1">Jump to Day:</span>
+            <button onclick="scrollToCalcDay(1)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200">Day 1</button>
+            <button onclick="scrollToCalcDay(50)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 50</button>
+            <button onclick="scrollToCalcDay(100)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 100</button>
+            <button onclick="scrollToCalcDay(150)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 150</button>
+            <button onclick="scrollToCalcDay(200)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 200</button>
+            <button onclick="scrollToCalcDay(250)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 250</button>
+            <button onclick="scrollToCalcDay(300)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-amber-300">Day 300</button>
+            <button onclick="scrollToCalcDay(365)" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-xs font-mono text-emerald-300">Day 365</button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <input id="calcJumpInput" type="number" min="1" max="365" placeholder="1 - 365" class="w-24 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+            <button onclick="scrollToCalcDay(parseInt(document.getElementById('calcJumpInput').value, 10))" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white">Find</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Column Daily Compounding Table -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="max-h-[65vh] overflow-y-auto" id="compoundingTableScroll">
+          <table class="w-full text-left border-collapse">
+            <thead class="sticky top-0 z-10 bg-[#161f32] border-b border-slate-700 text-[11px] sm:text-xs uppercase tracking-wider text-slate-300">
+              <tr>
+                <th class="py-3 px-3 sm:px-5 font-semibold w-24 sm:w-32">Day</th>
+                <th class="py-3 px-3 sm:px-5 font-semibold">Margin / Opening Capital (₹)</th>
+                <th class="py-3 px-3 sm:px-5 font-semibold text-right">Daily Target Profit & Closing Balance (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="compoundingTableBody" class="divide-y divide-slate-800/70 text-xs sm:text-sm font-mono">
+              <!-- 365 Rows rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: ANALYTICS, MONTHLY SUMMARY & EXPORT                          -->
+    <!-- =================================================================== -->
+    <section id="panelAnalytics" class="hidden space-y-4">
+      <!-- Export & Backup Controls -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white">Records Export & Cloud Backup</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Download all 365 days of P&L logs, statuses, and trade notes for Excel or JSON backup.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportToCSV()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/50 transition active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Export CSV (Excel)</span>
+          </button>
+
+          <button onclick="exportToJSON()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition active:scale-95">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>JSON Backup</span>
+          </button>
+
+          <label class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-semibold cursor-pointer transition">
+            <span>Restore JSON</span>
+            <input type="file" accept=".json" onchange="importFromJSON(event)" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Equity Curve Chart -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 class="text-sm font-bold text-white">Cumulative Equity Curve (₹)</h3>
+            <p class="text-xs text-slate-400">Actual realized account balance trajectory across logged days</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-3 h-0.5 bg-emerald-400 inline-block"></span> Actual Capital</span>
+            <span class="flex items-center gap-1.5 text-slate-400"><span class="w-3 h-0.5 bg-slate-500 border-dashed inline-block"></span> Starting Capital</span>
+          </div>
+        </div>
+        <div class="w-full h-56 sm:h-64 bg-slate-950/60 rounded-xl border border-slate-800/80 p-2 relative">
+          <canvas id="equityChartCanvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Monthly P&L Summary (12 Challenge Months) -->
+      <div class="bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-white">Monthly P&L Summary (Month 1 – Month 12)</h3>
+            <p class="text-xs text-slate-400">30-day challenge cycles breakdown (Month 12 covers Days 331–365)</p>
+          </div>
+          <div id="overallStatsPill" class="text-xs font-mono px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300">
+            Win Rate: 0.0%
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-[#161f32] border-b border-slate-700 text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th class="py-3 px-4 font-semibold">Challenge Month</th>
+                <th class="py-3 px-4 font-semibold text-right">Total Profit</th>
+                <th class="py-3 px-4 font-semibold text-right">Total Loss</th>
+                <th class="py-3 px-4 font-semibold text-right">Net P&L</th>
+                <th class="py-3 px-4 font-semibold text-center">Win Rate</th>
+                <th class="py-3 px-4 font-semibold text-right">Completed</th>
+              </tr>
+            </thead>
+            <tbody id="monthlySummaryBody" class="divide-y divide-slate-800/80 text-xs sm:text-sm font-mono">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: 50-DAY MILESTONE CELEBRATION MODAL                           -->
+  <!-- ===================================================================== -->
+  <div id="milestoneModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-gradient-to-b from-[#161f32] to-[#0f172a] border-2 border-amber-500/60 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl shadow-amber-500/20 relative overflow-hidden">
+      <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-4xl shadow-lg">
+        🏆
+      </div>
+      <div class="inline-block px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-widest mb-2" id="milestoneModalBadge">
+        DAY 50 MILESTONE
+      </div>
+      <h2 id="milestoneModalTitle" class="text-2xl font-extrabold text-white mb-2">First milestone unlocked! 🏆</h2>
+      <p id="milestoneModalDesc" class="text-sm text-slate-300 mb-5">
+        Incredible discipline! You have completed 50 trading days in your 365-Day Compounding Challenge.
+      </p>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 mb-6 grid grid-cols-2 gap-3 text-left">
+        <div>
+          <div class="text-[11px] text-slate-400">Current Capital</div>
+          <div id="milestoneModalCapital" class="text-sm font-bold font-mono text-emerald-400">₹10,000.00</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">Completed Days</div>
+          <div id="milestoneModalDays" class="text-sm font-bold font-mono text-amber-400">50 / 365</div>
+        </div>
+      </div>
+      <button onclick="closeMilestoneModal()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-lg transition active:scale-95">
+        Continue Challenge 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: CLOUD SYNC & FIREBASE AUTH / CONFIG MODAL                    -->
+  <!-- ===================================================================== -->
+  <div id="authModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-[#111827] border border-slate-700 rounded-2xl max-w-lg w-full p-5 sm:p-6 space-y-5 shadow-2xl my-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h3 class="text-base font-bold text-white">Cross-Device Cloud Sync (Android & Windows)</h3>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Current Sync Account Status -->
+      <div id="authCurrentStatusBox" class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Sync Engine Status:</span>
+          <span id="modalSyncEngineStatus" class="font-semibold text-emerald-400">Active (Instant Sync)</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Signed-in User:</span>
+          <span id="modalUserEmail" class="font-mono text-slate-200">Device Session</span>
+        </div>
+      </div>
+
+      <!-- Google & Email Sign-In Section (shown when Firebase is initialized) -->
+      <div id="firebaseAuthSection" class="space-y-3">
+        <button onclick="signInWithGoogle()" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+          </svg>
+          <span>Continue with Google (Android + Laptop Sync)</span>
+        </button>
+
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-slate-800"></div>
+          <span class="flex-shrink mx-3 text-[11px] text-slate-500 uppercase">or Email & Password</span>
+          <div class="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <form onsubmit="handleEmailAuth(event)" class="space-y-2.5">
+          <input id="authEmailInput" type="email" required placeholder="you@example.com" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          <input id="authPasswordInput" type="password" required minlength="6" placeholder="Password (min 6 chars)" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          <div class="grid grid-cols-2 gap-2">
+            <button type="submit" data-mode="login" onclick="window._authMode='login'" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">Sign In</button>
+            <button type="submit" data-mode="register" onclick="window._authMode='register'" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">Create Account</button>
+          </div>
+        </form>
+
+        <button id="signOutBtn" onclick="handleSignOut()" class="hidden w-full py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-xs font-semibold">
+          Sign Out
+        </button>
+      </div>
+
+      <!-- Custom Firebase Project Config Accordion -->
+      <details class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 text-xs">
+        <summary class="cursor-pointer font-semibold text-slate-300 select-none">
+          Connect Your Own Firebase Project Config (Optional)
+        </summary>
+        <div class="mt-2.5 space-y-2">
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Paste your Firebase Web App <code class="text-amber-300">firebaseConfig</code> JSON below to sync across your Motorola Android phone and ASUS Windows laptop in real time:
+          </p>
+          <textarea id="firebaseConfigTextarea" rows="4" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}' class="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 font-mono text-[11px] text-emerald-300 focus:outline-none focus:border-emerald-500"></textarea>
+          <div class="flex gap-2">
+            <button onclick="saveCustomFirebaseConfig()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Save & Connect</button>
+            <button onclick="clearCustomFirebaseConfig()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">Reset</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: EDIT STARTING CAPITAL MODAL                                  -->
+  <!-- ===================================================================== -->
+  <div id="capitalModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-[#111827] border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <h3 class="text-base font-bold text-white">Set Starting Capital (INR)</h3>
+      <p class="text-xs text-slate-400">Default challenge capital is ₹10,000.00. Updating this recalculates your Current Capital, ROI %, and Compounding Roadmap.</p>
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Starting Capital (₹)</label>
+        <input id="startingCapitalInput" type="number" step="100" min="100" value="10000" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 font-mono text-base text-white focus:outline-none focus:border-emerald-500" />
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeCapitalModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+        <button onclick="saveStartingCapital()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">Save Capital</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 4: INSTALL PWA GUIDE MODAL (ANDROID & WINDOWS)                  -->
+  <!-- ===================================================================== -->
+  <div id="installGuideModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-[#111827] border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Install App on Android & Windows</h3>
+        <button onclick="document.getElementById('installGuideModal').classList.add('hidden');document.getElementById('installGuideModal').classList.remove('flex')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-emerald-400">📱 Android Chrome (Motorola / Mobile)</div>
+          <p class="text-slate-400">Tap the <strong class="text-white">⋮ (three dots)</strong> menu in the top-right corner of Chrome and select <strong class="text-white">"Add to Home screen"</strong> or <strong class="text-white">"Install app"</strong>.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-amber-400">💻 Windows Chrome / Edge (ASUS Laptop)</div>
+          <p class="text-slate-400">Click the <strong class="text-white">Install icon (⊕ / monitor)</strong> on the right side of the browser address bar, or open <strong class="text-white">⋮ → Cast, save, and share → Install page as app</strong>.</p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('installGuideModal').classList.add('hidden');document.getElementById('installGuideModal').classList.remove('flex')" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Got It</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION LOGIC + PWA + FIREBASE FIRESTORE & AUTH                   -->
+  <!-- ===================================================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      onSnapshot,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. CONSTANTS & MILESTONES DEFINITION
+    // =========================================================================
+    const TOTAL_DAYS = 365;
+    const MILESTONES = [
+      { day: 50,  title: "First milestone unlocked! 🏆", short: "Day 50",  desc: "50 disciplined trading days completed! Momentum is building." },
+      { day: 100, title: "100 days of commitment!",      short: "Day 100", desc: "Triple digits! You've proven serious consistency and risk control." },
+      { day: 150, title: "Halfway to 300!",              short: "Day 150", desc: "150 days conquered! Compounding is starting to accelerate." },
+      { day: 200, title: "200 days completed!",          short: "Day 200", desc: "200 days in the books! Most traders quit long before here." },
+      { day: 250, title: "Amazing consistency!",         short: "Day 250", desc: "250 days of execution! Your process is rock solid." },
+      { day: 300, title: "Final stretch!",               short: "Day 300", desc: "300 days done! Only 65 days left to complete the full year." },
+      { day: 350, title: "Almost there!",                short: "Day 350", desc: "350 days achieved! Victory is right within reach." },
+      { day: 365, title: "CHALLENGE COMPLETED! 👑",      short: "Day 365", desc: "365 DAYS MASTERED! You completed the entire 1-year compounding challenge!" }
+    ];
+
+    const STORAGE_KEY = "trading_challenge_365_state_v1";
+    const FIREBASE_CFG_KEY = "trading_challenge_firebase_cfg_v1";
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    let appState = {
+      startingCapital: 10000,
+      dailyRate: 6.0,
+      days: {}, // { "1": { status: "completed"|"notrade"|"missed"|"", pnl: number|null, notes: string } }
+      celebratedMilestones: [],
+      updatedAt: Date.now()
+    };
+
+    let uiState = {
+      activeTab: 'journal',
+      journalFilter: 'all',
+      journalSearch: '',
+      journalBlock: 1, // 1: Days 1-50, 2: 51-100, ..., 8: 351-365, 0: All
+      compareRates: false
+    };
+
+    // Firebase runtime refs
+    let fbApp = null;
+    let fbAuth = null;
+    let fbDb = null;
+    let fbUser = null;
+    let fbUnsubscribe = null;
+    let isRemoteUpdate = false;
+    let saveDebounceTimer = null;
+    const runtimeAppId = typeof __app_id !== 'undefined' ? __app_id : 'trading-365-challenge';
+
+    // =========================================================================
+    // 3. INDIAN NUMBERING SYSTEM FORMATTERS (INR)
+    // =========================================================================
+    const inrFormatter = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    function formatINR(value) {
+      const num = Number(value) || 0;
+      return inrFormatter.format(num);
+    }
+
+    function formatSignedINR(value) {
+      const num = Number(value) || 0;
+      const formatted = inrFormatter.format(Math.abs(num));
+      if (num > 0) return `+${formatted}`;
+      if (num < 0) return `-${formatted}`;
+      return formatted;
+    }
+
+    function formatCompactIndian(value) {
+      const abs = Math.abs(value);
+      const sign = value < 0 ? '-' : '';
+      if (abs >= 1e7) return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`;
+      if (abs >= 1e5) return `${sign}₹${(abs / 1e5).toFixed(2)} L`;
+      if (abs >= 1e3) return `${sign}₹${(abs / 1e3).toFixed(1)} K`;
+      return formatINR(value);
+    }
+
+    // =========================================================================
+    // 4. PERSISTENCE (IN-MEMORY + BROWSER CACHE + FIRESTORE REAL-TIME SYNC)
+    // =========================================================================
+    function loadInitialLocalState() {
+      try {
+        const raw = window.name && window.name.startsWith("TC365:")
+          ? window.name.slice(6)
+          : null;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            appState = {
+              startingCapital: Number(parsed.startingCapital) || 10000,
+              dailyRate: Number(parsed.dailyRate) || 6.0,
+              days: parsed.days || {},
+              celebratedMilestones: Array.isArray(parsed.celebratedMilestones) ? parsed.celebratedMilestones : [],
+              updatedAt: parsed.updatedAt || Date.now()
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("Session cache restore skipped:", e);
+      }
+    }
+
+    function persistSessionMirror() {
+      try {
+        window.name = "TC365:" + JSON.stringify(appState);
+      } catch (e) {
+        // Ignore window.name size issues
+      }
+    }
+
+    function setSyncBadge(state, text) {
+      const dot = document.getElementById('syncDot');
+      const label = document.getElementById('syncText');
+      const badge = document.getElementById('syncStatusBadge');
+      if (!dot || !label || !badge) return;
+
+      label.textContent = text;
+      if (state === 'saving') {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-amber-500/40 text-xs font-medium text-amber-300 transition-all';
+      } else if (state === 'cloud') {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-emerald-500/30 text-xs font-medium text-emerald-400 transition-all';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-sky-400';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-medium text-sky-300 transition-all';
+      }
+    }
+
+    function triggerAutoSave() {
+      appState.updatedAt = Date.now();
+      persistSessionMirror();
+      setSyncBadge('saving', 'Syncing...');
+
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = setTimeout(async () => {
+        if (fbDb && fbUser) {
+          try {
+            const docRef = doc(fbDb, 'artifacts', runtimeAppId, 'users', fbUser.uid, 'challengeData', 'main');
+            await setDoc(docRef, {
+              startingCapital: appState.startingCapital,
+              dailyRate: appState.dailyRate,
+              days: appState.days,
+              celebratedMilestones: appState.celebratedMilestones,
+              updatedAt: appState.updatedAt
+            }, { merge: true });
+            setSyncBadge('cloud', 'Saved to Cloud ✓');
+          } catch (err) {
+            console.error("Firestore save error:", err);
+            setSyncBadge('local', 'Saved Locally ✓');
+          }
+        } else {
+          setSyncBadge('local', 'Saved Locally ✓');
+        }
+      }, 300);
+    }
+
+    // =========================================================================
+    // 5. FIREBASE INITIALIZATION & REAL-TIME LISTENER
+    // =========================================================================
+    function getFirebaseConfig() {
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        try {
+          return JSON.parse(__firebase_config);
+        } catch (e) {}
+      }
+      try {
+        const saved = sessionStorage.getItem(FIREBASE_CFG_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+      return null;
+    }
+
+    async function initFirebase() {
+      const cfg = getFirebaseConfig();
+      if (!cfg || !cfg.apiKey) {
+        setSyncBadge('local', 'Ready (Local Mode)');
+        document.getElementById('modalSyncEngineStatus').textContent = 'Local Mode (Add Firebase Config for Multi-Device)';
+        document.getElementById('modalSyncEngineStatus').className = 'font-semibold text-amber-400';
+        return;
+      }
+
+      try {
+        fbApp = initializeApp(cfg);
+        fbAuth = getAuth(fbApp);
+        fbDb = getFirestore(fbApp);
+
+        // Enable IndexedDB offline persistence for seamless mobile/desktop offline resilience
+        try {
+          await enableIndexedDbPersistence(fbDb);
+        } catch (persistenceErr) {
+          console.warn("IndexedDB persistence note:", persistenceErr.code);
+        }
+
+        // Authenticate first per strict auth-before-query pattern
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(fbAuth, __initial_auth_token);
+        } else if (!fbAuth.currentUser) {
+          await signInAnonymously(fbAuth);
+        }
+
+        onAuthStateChanged(fbAuth, (user) => {
+          fbUser = user;
+          updateAuthUI(user);
+          if (user) {
+            attachFirestoreRealtimeSync(user.uid);
+          }
+        });
+      } catch (err) {
+        console.error("Firebase init failed:", err);
+        setSyncBadge('local', 'Offline Local Mode');
+      }
+    }
+
+    function attachFirestoreRealtimeSync(uid) {
+      if (fbUnsubscribe) fbUnsubscribe();
+      const docRef = doc(fbDb, 'artifacts', runtimeAppId, 'users', uid, 'challengeData', 'main');
+
+      fbUnsubscribe = onSnapshot(
+        docRef,
+        (snap) => {
+          if (snap.exists()) {
+            const remote = snap.data();
+            if (!remote.updatedAt || remote.updatedAt >= appState.updatedAt) {
+              isRemoteUpdate = true;
+              appState.startingCapital = Number(remote.startingCapital) || 10000;
+              appState.dailyRate = Number(remote.dailyRate) || 6.0;
+              appState.days = remote.days || {};
+              appState.celebratedMilestones = Array.isArray(remote.celebratedMilestones) ? remote.celebratedMilestones : [];
+              appState.updatedAt = remote.updatedAt || Date.now();
+              persistSessionMirror();
+              renderAll();
+              isRemoteUpdate = false;
+            }
+          } else {
+            // Seed initial cloud doc
+            triggerAutoSave();
+          }
+          setSyncBadge('cloud', 'Saved to Cloud ✓');
+        },
+        (error) => {
+          console.error("Firestore snapshot error:", error);
+          setSyncBadge('local', 'Offline Sync Queued');
+        }
+      );
+    }
+
+    function updateAuthUI(user) {
+      const btnLabel = document.getElementById('authBtnLabel');
+      const modalEmail = document.getElementById('modalUserEmail');
+      const signOutBtn = document.getElementById('signOutBtn');
+      const engineStatus = document.getElementById('modalSyncEngineStatus');
+
+      if (user) {
+        const display = user.email ? user.email : `Synced ID (${user.uid.slice(0, 6)}…)`;
+        btnLabel.textContent = user.email ? user.email.split('@')[0] : 'Synced ✓';
+        modalEmail.textContent = user.email || user.uid;
+        engineStatus.textContent = 'Connected to Cloud Firestore ✓';
+        engineStatus.className = 'font-semibold text-emerald-400';
+        if (!user.isAnonymous) {
+          signOutBtn.classList.remove('hidden');
+        } else {
+          signOutBtn.classList.add('hidden');
+        }
+      } else {
+        btnLabel.textContent = 'Cloud Sync';
+        modalEmail.textContent = 'Not signed in';
+        signOutBtn.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 6. CORE CALCULATIONS (KPIs, COMPOUNDING SCHEDULE, ANALYTICS)
+    // =========================================================================
+    function computeMetrics() {
+      const startCap = appState.startingCapital;
+      let totalPnl = 0;
+      let completedCount = 0;
+      let bestDay = null;  // { day, pnl }
+      let worstDay = null; // { day, pnl }
+      let winDays = 0;
+      let lossDays = 0;
+
+      for (let d = 1; d <= TOTAL_DAYS; d++) {
+        const entry = appState.days[String(d)];
+        if (!entry) continue;
+        if (entry.status === 'completed') completedCount++;
+
+        if (entry.pnl !== null && entry.pnl !== undefined && entry.pnl !== '' && !isNaN(Number(entry.pnl))) {
+          const pnlVal = Number(entry.pnl);
+          totalPnl += pnlVal;
+          if (pnlVal > 0) winDays++;
+          if (pnlVal < 0) lossDays++;
+
+          if (!bestDay || pnlVal > bestDay.pnl) {
+            bestDay = { day: d, pnl: pnlVal };
+          }
+          if (!worstDay || pnlVal < worstDay.pnl) {
+            worstDay = { day: d, pnl: pnlVal };
+          }
+        }
+      }
+
+      const currentCapital = startCap + totalPnl;
+      const roiPct = startCap > 0 ? (totalPnl / startCap) * 100 : 0;
+      const remainingDays = TOTAL_DAYS - completedCount;
+      const completionPct = (completedCount / TOTAL_DAYS) * 100;
+      const tradedCount = winDays + lossDays;
+      const winRate = tradedCount > 0 ? (winDays / tradedCount) * 100 : 0;
+
+      return {
+        startCap,
+        currentCapital,
+        totalPnl,
+        roiPct,
+        completedCount,
+        remainingDays,
+        completionPct,
+        bestDay,
+        worstDay,
+        winDays,
+        lossDays,
+        winRate
+      };
+    }
+
+    function generateCompoundingSchedule(startCap, ratePct) {
+      const rate = ratePct / 100;
+      const rows = [];
+      let opening = startCap;
+
+      for (let day = 1; day <= TOTAL_DAYS; day++) {
+        const targetProfit = opening * rate;
+        const closing = opening + targetProfit;
+        rows.push({
+          day,
+          opening,
+          targetProfit,
+          closing
+        });
+        opening = closing;
+      }
+      return rows;
+    }
+
+    // =========================================================================
+    // 7. RENDERING FUNCTIONS
+    // =========================================================================
+    function renderDashboardKPIs() {
+      const m = computeMetrics();
+
+      document.getElementById('kpiStartingCapital').textContent = formatINR(m.startCap);
+      document.getElementById('kpiTargetRateLabel').innerHTML = `Daily Target: <span class="text-amber-400 font-semibold">${appState.dailyRate.toFixed(1)}%</span>`;
+
+      document.getElementById('kpiCurrentCapital').textContent = formatINR(m.currentCapital);
+      document.getElementById('kpiCompactCapital').textContent = `Compact: ${formatCompactIndian(m.currentCapital)}`;
+
+      const pnlEl = document.getElementById('kpiTotalPnl');
+      const roiBadge = document.getElementById('kpiRoiBadge');
+      pnlEl.textContent = formatSignedINR(m.totalPnl);
+
+      if (m.totalPnl >= 0) {
+        pnlEl.className = 'text-lg sm:text-2xl font-bold font-mono text-emerald-400 tabular-nums';
+        roiBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/15 text-emerald-400';
+        roiBadge.textContent = `+${m.roiPct.toFixed(2)}%`;
+      } else {
+        pnlEl.className = 'text-lg sm:text-2xl font-bold font-mono text-red-400 tabular-nums';
+        roiBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-red-500/15 text-red-400';
+        roiBadge.textContent = `${m.roiPct.toFixed(2)}%`;
+      }
+
+      document.getElementById('kpiWinRateMini').textContent = `Win Rate: ${m.winRate.toFixed(1)}% (${m.winDays}W / ${m.lossDays}L)`;
+      document.getElementById('kpiCompletedDays').textContent = m.completedCount;
+      document.getElementById('kpiRemainingBadge').textContent = `${m.remainingDays} left`;
+      document.getElementById('kpiRemainingDays').textContent = `${m.remainingDays} Days`;
+      document.getElementById('kpiCompletionPct').textContent = `${m.completionPct.toFixed(1)}% Done`;
+      document.getElementById('kpiProgressBar').style.width = `${Math.min(100, m.completionPct)}%`;
+
+      if (m.bestDay) {
+        document.getElementById('kpiBestDay').textContent = formatSignedINR(m.bestDay.pnl);
+        document.getElementById('kpiBestDayNum').textContent = `Day ${m.bestDay.day}`;
+      } else {
+        document.getElementById('kpiBestDay').textContent = '—';
+        document.getElementById('kpiBestDayNum').textContent = 'No trades';
+      }
+
+      if (m.worstDay) {
+        document.getElementById('kpiWorstDay').textContent = formatSignedINR(m.worstDay.pnl);
+        document.getElementById('kpiWorstDayNum').textContent = `Day ${m.worstDay.day}`;
+      } else {
+        document.getElementById('kpiWorstDay').textContent = '—';
+        document.getElementById('kpiWorstDayNum').textContent = 'No trades';
+      }
+    }
+
+    function renderMilestonesBar() {
+      const m = computeMetrics();
+      const grid = document.getElementById('milestonesTrophyGrid');
+      const nextHint = document.getElementById('nextMilestoneHint');
+
+      const nextM = MILESTONES.find(item => m.completedCount < item.day);
+      if (nextM) {
+        const diff = nextM.day - m.completedCount;
+        nextHint.innerHTML = `Next: <strong class="text-amber-400">${nextM.short}</strong> (${diff} day${diff === 1 ? '' : 's'} away)`;
+      } else {
+        nextHint.innerHTML = `<strong class="text-amber-400">ALL 365 MILESTONES UNLOCKED! 👑</strong>`;
+      }
+
+      grid.innerHTML = MILESTONES.map(ms => {
+        const unlocked = m.completedCount >= ms.day;
+        return `
+          <div class="rounded-xl p-2.5 border transition-all flex flex-col justify-between ${
+            unlocked
+              ? 'bg-amber-500/15 border-amber-500/50 milestone-unlocked-glow'
+              : 'bg-slate-900/70 border-slate-800 opacity-60'
+          }">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-mono font-bold ${unlocked ? 'text-amber-300' : 'text-slate-400'}">${ms.short}</span>
+              <span class="text-sm">${unlocked ? '🏆' : '🔒'}</span>
+            </div>
+            <div class="text-[11px] leading-snug font-medium ${unlocked ? 'text-white' : 'text-slate-500'}">
+              ${ms.title}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderJournalPhaseBar() {
+      const bar = document.getElementById('journalPhaseBar');
+      const blocks = [
+        { id: 1, label: 'Days 1–50' },
+        { id: 2, label: '51–100' },
+        { id: 3, label: '101–150' },
+        { id: 4, label: '151–200' },
+        { id: 5, label: '201–250' },
+        { id: 6, label: '251–300' },
+        { id: 7, label: '301–350' },
+        { id: 8, label: '351–365' },
+        { id: 0, label: 'All 365' }
+      ];
+
+      bar.innerHTML = `<span class="text-[11px] font-semibold text-slate-400 uppercase mr-1 shrink-0">Range:</span>` +
+        blocks.map(b => {
+          const active = uiState.journalBlock === b.id;
+          return `
+            <button onclick="setJournalBlock(${b.id})" class="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold shrink-0 transition ${
+              active
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'bg-slate-800/80 text-slate-400 hover:text-white'
+            }">
+              ${b.label}
+            </button>
+          `;
+        }).join('');
+    }
+
+    function renderJournalCards() {
+      const container = document.getElementById('journalCardsContainer');
+      const schedule = generateCompoundingSchedule(appState.startingCapital, appState.dailyRate);
+      const searchQ = uiState.journalSearch.trim().toLowerCase();
+
+      // Determine block bounds
+      let minDay = 1;
+      let maxDay = TOTAL_DAYS;
+      if (uiState.journalBlock > 0 && uiState.journalFilter === 'all' && !searchQ) {
+        minDay = (uiState.journalBlock - 1) * 50 + 1;
+        maxDay = Math.min(TOTAL_DAYS, uiState.journalBlock * 50);
+      }
+
+      const cardsHtml = [];
+
+      for (let d = minDay; d <= maxDay; d++) {
+        const entry = appState.days[String(d)] || { status: '', pnl: '', notes: '' };
+        const pnlNum = (entry.pnl !== '' && entry.pnl !== null && !isNaN(Number(entry.pnl))) ? Number(entry.pnl) : null;
+
+        // Apply filters
+        if (uiState.journalFilter === 'completed' && entry.status !== 'completed') continue;
+        if (uiState.journalFilter === 'notrade' && entry.status !== 'notrade') continue;
+        if (uiState.journalFilter === 'missed' && entry.status !== 'missed') continue;
+        if (uiState.journalFilter === 'profit' && !(pnlNum !== null && pnlNum > 0)) continue;
+        if (uiState.journalFilter === 'loss' && !(pnlNum !== null && pnlNum < 0)) continue;
+
+        if (searchQ) {
+          const haystack = `day ${d} ${entry.notes || ''} ${entry.status || ''}`.toLowerCase();
+          if (!haystack.includes(searchQ)) continue;
+        }
+
+        const plan = schedule[d - 1];
+        const isMilestoneDay = MILESTONES.some(ms => ms.day === d);
+
+        // Card border styling based on status/P&L
+        let cardBorder = 'border-slate-800/90';
+        if (entry.status === 'completed') cardBorder = 'border-emerald-500/40';
+        else if (entry.status === 'missed') cardBorder = 'border-red-500/40';
+        else if (entry.status === 'notrade') cardBorder = 'border-amber-500/35';
+
+        const pnlInputColor = pnlNum === null
+          ? 'text-white'
+          : pnlNum > 0
+            ? 'text-emerald-400 font-bold'
+            : pnlNum < 0
+              ? 'text-red-400 font-bold'
+              : 'text-slate-300';
+
+        cardsHtml.push(`
+          <div id="journal-day-${d}" class="bg-[#111827] border ${cardBorder} rounded-2xl p-3.5 sm:p-4 transition-all hover:border-slate-700">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <!-- Left: Day Badge & Compounding Target Reference -->
+              <div class="flex items-start sm:items-center justify-between sm:justify-start gap-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-11 h-11 rounded-xl ${isMilestoneDay ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300' : 'bg-slate-800/90 border border-slate-700 text-white'} flex flex-col items-center justify-center shrink-0">
+                    <span class="text-[9px] uppercase tracking-wider text-slate-400 leading-none">Day</span>
+                    <span class="text-sm font-bold font-mono leading-tight">${d}</span>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs sm:text-sm font-bold text-white">Day ${d}</span>
+                      ${isMilestoneDay ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">🏆 Milestone</span>` : ''}
+                    </div>
+                    <div class="text-[11px] sm:text-xs font-mono text-slate-400 mt-0.5">
+                      Margin: <span class="text-slate-200">${formatCompactIndian(plan.opening)}</span> •
+                      Target (${appState.dailyRate.toFixed(1)}%): <span class="text-emerald-400">+${formatINR(plan.targetProfit)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Middle & Right: Status Pills + Daily P&L Input -->
+              <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
+                <!-- Thumb-friendly Status Selector -->
+                <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+                  <button type="button" onclick="setDayStatus(${d}, 'completed')" class="px-2.5 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 ${
+                    entry.status === 'completed'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-400 hover:text-emerald-300'
+                  }">
+                    ✓ Completed
+                  </button>
+                  <button type="button" onclick="setDayStatus(${d}, 'notrade')" class="px-2.5 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 ${
+                    entry.status === 'notrade'
+                      ? 'bg-amber-500 text-slate-950 shadow'
+                      : 'text-slate-400 hover:text-amber-300'
+                  }">
+                    ⏸ No Trade
+                  </button>
+                  <button type="button" onclick="setDayStatus(${d}, 'missed')" class="px-2.5 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 ${
+                    entry.status === 'missed'
+                      ? 'bg-red-600 text-white shadow'
+                      : 'text-slate-400 hover:text-red-300'
+                  }">
+                    ✕ Missed
+                  </button>
+                </div>
+
+                <!-- Daily P&L Input (INR) -->
+                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                  <div class="relative flex-1 sm:w-36">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value="${entry.pnl !== null && entry.pnl !== undefined ? entry.pnl : ''}"
+                      oninput="updateDayPnl(${d}, this.value)"
+                      placeholder="P&L (+/-)"
+                      class="w-full pl-7 pr-2.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-700 font-mono text-xs sm:text-sm ${pnlInputColor} placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onclick="fillTargetProfit(${d}, ${plan.targetProfit.toFixed(2)})"
+                    title="Fill Target Profit (+${formatINR(plan.targetProfit)})"
+                    class="px-2.5 py-2 sm:py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-semibold shrink-0 transition active:scale-95"
+                  >
+                    +Target
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expandable Trade Notes -->
+            <div class="mt-2.5 pt-2.5 border-t border-slate-800/70">
+              <div class="flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <input
+                  type="text"
+                  value="${escapeHtml(entry.notes || '')}"
+                  oninput="updateDayNotes(${d}, this.value)"
+                  placeholder="Trade notes: pair/index, setup, discipline, lessons..."
+                  class="w-full bg-transparent text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:text-white"
+                />
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      if (cardsHtml.length === 0) {
+        container.innerHTML = `
+          <div class="bg-[#111827] border border-slate-800 rounded-2xl p-8 text-center">
+            <p class="text-sm text-slate-400">No trading days match your current filter or search query.</p>
+            <button onclick="setJournalFilter('all');document.getElementById('journalSearchInput').value='';handleJournalSearch('')" class="mt-3 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white">
+              Reset Filters
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = cardsHtml.join('');
+      }
+    }
+
+    function renderCompoundingTable() {
+      const tbody = document.getElementById('compoundingTableBody');
+      const schedule = generateCompoundingSchedule(appState.startingCapital, appState.dailyRate);
+
+      tbody.innerHTML = schedule.map(row => {
+        const isMilestone = MILESTONES.some(ms => ms.day === row.day);
+        const dayEntry = appState.days[String(row.day)];
+        const isCompleted = dayEntry && dayEntry.status === 'completed';
+
+        return `
+          <tr id="calc-row-${row.day}" class="${isMilestone ? 'bg-amber-500/10' : 'hover:bg-slate-800/40'} transition-colors">
+            <td class="py-3 px-3 sm:px-5 font-bold ${isMilestone ? 'text-amber-300' : 'text-slate-200'}">
+              <div class="flex items-center gap-1.5">
+                <span>Day ${row.day}</span>
+                ${isMilestone ? '<span>🏆</span>' : ''}
+                ${isCompleted ? '<span class="text-emerald-400 text-xs">✓</span>' : ''}
+              </div>
+            </td>
+            <td class="py-3 px-3 sm:px-5 text-slate-300 tabular-nums">
+              <div>${formatINR(row.opening)}</div>
+              <div class="text-[10px] text-slate-500">${formatCompactIndian(row.opening)}</div>
+            </td>
+            <td class="py-3 px-3 sm:px-5 text-right tabular-nums">
+              <div class="text-emerald-400 font-semibold">+${formatINR(row.targetProfit)}</div>
+              <div class="text-xs text-white font-bold mt-0.5">${formatINR(row.closing)} <span class="text-[10px] font-normal text-slate-400">(${formatCompactIndian(row.closing)})</span></div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (uiState.compareRates) {
+        renderRateComparisonCards();
+      }
+    }
+
+    function renderRateComparisonCards() {
+      const panel = document.getElementById('rateComparisonPanel');
+      const rates = [5.0, 6.0, 7.0];
+      panel.innerHTML = rates.map(r => {
+        const sched = generateCompoundingSchedule(appState.startingCapital, r);
+        const day30 = sched[29].closing;
+        const day100 = sched[99].closing;
+        const day365 = sched[364].closing;
+        const isSelected = Math.abs(appState.dailyRate - r) < 0.05;
+
+        return `
+          <div onclick="updateTargetRate(${r})" class="cursor-pointer rounded-xl p-3.5 border transition ${
+            isSelected
+              ? 'bg-emerald-500/10 border-emerald-500/50'
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-bold font-mono text-amber-400">${r.toFixed(1)}% Daily Target</span>
+              ${isSelected ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Active</span>' : ''}
+            </div>
+            <div class="space-y-1 text-xs font-mono">
+              <div class="flex justify-between"><span class="text-slate-400">Day 30:</span><span class="text-slate-200">${formatCompactIndian(day30)}</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Day 100:</span><span class="text-slate-200">${formatCompactIndian(day100)}</span></div>
+              <div class="flex justify-between pt-1 border-t border-slate-800"><span class="text-slate-300 font-semibold">Day 365:</span><span class="text-emerald-400 font-bold">${formatCompactIndian(day365)}</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAnalytics() {
+      const tbody = document.getElementById('monthlySummaryBody');
+      const m = computeMetrics();
+      document.getElementById('overallStatsPill').textContent = `Win Rate: ${m.winRate.toFixed(1)}% • ${m.winDays}W / ${m.lossDays}L`;
+
+      const rows = [];
+      for (let month = 1; month <= 12; month++) {
+        const startDay = (month - 1) * 30 + 1;
+        const endDay = month === 12 ? 365 : month * 30;
+
+        let profit = 0;
+        let loss = 0;
+        let completed = 0;
+        let wins = 0;
+        let losses = 0;
+
+        for (let d = startDay; d <= endDay; d++) {
+          const entry = appState.days[String(d)];
+          if (!entry) continue;
+          if (entry.status === 'completed') completed++;
+          if (entry.pnl !== '' && entry.pnl !== null && !isNaN(Number(entry.pnl))) {
+            const val = Number(entry.pnl);
+            if (val > 0) {
+              profit += val;
+              wins++;
+            } else if (val < 0) {
+              loss += Math.abs(val);
+              losses++;
+            }
+          }
+        }
+
+        const net = profit - loss;
+        const totalTraded = wins + losses;
+        const winRate = totalTraded > 0 ? (wins / totalTraded) * 100 : 0;
+
+        rows.push(`
+          <tr class="hover:bg-slate-800/40">
+            <td class="py-3 px-4">
+              <div class="font-bold text-white">Month ${month}</div>
+              <div class="text-[11px] text-slate-500">Days ${startDay}–${endDay}</div>
+            </td>
+            <td class="py-3 px-4 text-right text-emerald-400">+${formatINR(profit)}</td>
+            <td class="py-3 px-4 text-right text-red-400">-${formatINR(loss)}</td>
+            <td class="py-3 px-4 text-right font-bold ${net >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatSignedINR(net)}</td>
+            <td class="py-3 px-4 text-center text-slate-300">${winRate.toFixed(0)}%</td>
+            <td class="py-3 px-4 text-right text-slate-300">${completed} / ${endDay - startDay + 1}</td>
+          </tr>
+        `);
+      }
+
+      tbody.innerHTML = rows.join('');
+      drawEquityCurveCanvas();
+    }
+
+    function drawEquityCurveCanvas() {
+      const canvas = document.getElementById('equityChartCanvas');
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+      ctx.clearRect(0, 0, width, height);
+
+      // Build equity points up to highest logged day (or Day 30 minimum)
+      let running = appState.startingCapital;
+      const points = [{ day: 0, val: running }];
+      let lastLoggedDay = 0;
+
+      for (let d = 1; d <= TOTAL_DAYS; d++) {
+        const entry = appState.days[String(d)];
+        if (entry && entry.pnl !== '' && entry.pnl !== null && !isNaN(Number(entry.pnl))) {
+          running += Number(entry.pnl);
+          lastLoggedDay = d;
+        }
+        points.push({ day: d, val: running });
+      }
+
+      const displayLimit = Math.max(30, lastLoggedDay + 5);
+      const visiblePoints = points.slice(0, Math.min(TOTAL_DAYS + 1, displayLimit + 1));
+
+      const vals = visiblePoints.map(p => p.val);
+      const minVal = Math.min(...vals, appState.startingCapital * 0.95);
+      const maxVal = Math.max(...vals, appState.startingCapital * 1.05);
+      const range = maxVal - minVal || 1;
+
+      const padLeft = 14;
+      const padRight = 14;
+      const padTop = 16;
+      const padBottom = 22;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      const getX = (idx) => padLeft + (idx / (visiblePoints.length - 1)) * plotW;
+      const getY = (val) => padTop + plotH - ((val - minVal) / range) * plotH;
+
+      // Baseline (Starting Capital)
+      const baseY = getY(appState.startingCapital);
+      ctx.save();
+      ctx.strokeStyle = '#334155';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, baseY);
+      ctx.lineTo(width - padRight, baseY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Equity Gradient Fill
+      const grad = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
+      grad.addColorStop(0, 'rgba(16, 185, 129, 0.30)');
+      grad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), height - padBottom);
+      visiblePoints.forEach((pt, idx) => {
+        ctx.lineTo(getX(idx), getY(pt.val));
+      });
+      ctx.lineTo(getX(visiblePoints.length - 1), height - padBottom);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Equity Line
+      ctx.beginPath();
+      visiblePoints.forEach((pt, idx) => {
+        const x = getX(idx);
+        const y = getY(pt.val);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillText(`Day 0 (${formatCompactIndian(appState.startingCapital)})`, padLeft, height - 6);
+      const lastPt = visiblePoints[visiblePoints.length - 1];
+      const endLabel = `Day ${lastPt.day} (${formatCompactIndian(lastPt.val)})`;
+      ctx.fillText(endLabel, width - padRight - ctx.measureText(endLabel).width, height - 6);
+    }
+
+    function renderAll() {
+      renderDashboardKPIs();
+      renderMilestonesBar();
+      renderJournalPhaseBar();
+      renderJournalCards();
+      renderCompoundingTable();
+      if (uiState.activeTab === 'analytics') {
+        renderAnalytics();
+      }
+    }
+
+    // =========================================================================
+    // 8. USER INTERACTIONS & MILESTONE CONFETTI ENGINE
+    // =========================================================================
+    window.switchTab = function(tab) {
+      uiState.activeTab = tab;
+      const tabs = ['journal', 'calculator', 'analytics'];
+      tabs.forEach(t => {
+        const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (t === tab) {
+          panel.classList.remove('hidden');
+          btn.className = 'flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition bg-emerald-600 text-white shadow-md';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800/60';
+        }
+      });
+
+      if (tab === 'analytics') {
+        renderAnalytics();
+      }
+    };
+
+    window.setDayStatus = function(day, status) {
+      const key = String(day);
+      if (!appState.days[key]) appState.days[key] = { status: '', pnl: '', notes: '' };
+
+      // Toggle off if clicking same status
+      appState.days[key].status = appState.days[key].status === status ? '' : status;
+
+      renderDashboardKPIs();
+      renderMilestonesBar();
+      renderJournalCards();
+      triggerAutoSave();
+      checkMilestonesCelebration();
+    };
+
+    window.updateDayPnl = function(day, rawValue) {
+      const key = String(day);
+      if (!appState.days[key]) appState.days[key] = { status: '', pnl: '', notes: '' };
+      appState.days[key].pnl = rawValue === '' ? '' : Number(rawValue);
+
+      renderDashboardKPIs();
+      triggerAutoSave();
+    };
+
+    window.fillTargetProfit = function(day, targetVal) {
+      const key = String(day);
+      if (!appState.days[key]) appState.days[key] = { status: '', pnl: '', notes: '' };
+      appState.days[key].pnl = Number(targetVal);
+      if (!appState.days[key].status) {
+        appState.days[key].status = 'completed';
+      }
+
+      renderDashboardKPIs();
+      renderMilestonesBar();
+      renderJournalCards();
+      triggerAutoSave();
+      checkMilestonesCelebration();
+      showToast(`Day ${day} filled with +${formatINR(targetVal)}`);
+    };
+
+    window.updateDayNotes = function(day, text) {
+      const key = String(day);
+      if (!appState.days[key]) appState.days[key] = { status: '', pnl: '', notes: '' };
+      appState.days[key].notes = text;
+      triggerAutoSave();
+    };
+
+    window.setJournalFilter = function(filter) {
+      uiState.journalFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+          btn.className = 'filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white shrink-0';
+        } else {
+          btn.className = 'filter-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0';
+        }
+      });
+      renderJournalCards();
+    };
+
+    window.setJournalBlock = function(blockId) {
+      uiState.journalBlock = blockId;
+      renderJournalPhaseBar();
+      renderJournalCards();
+    };
+
+    window.handleJournalSearch = function(query) {
+      uiState.journalSearch = query;
+      renderJournalCards();
+    };
+
+    window.jumpToJournalDay = function() {
+      const val = parseInt(document.getElementById('journalJumpInput').value, 10);
+      if (!val || val < 1 || val > 365) {
+        showToast('Enter a valid day between 1 and 365');
+        return;
+      }
+      // Switch to appropriate 50-day block if needed
+      if (uiState.journalBlock !== 0) {
+        uiState.journalBlock = Math.ceil(val / 50);
+        renderJournalPhaseBar();
+      }
+      uiState.journalFilter = 'all';
+      renderJournalCards();
+
+      setTimeout(() => {
+        const el = document.getElementById(`journal-day-${val}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-amber-400');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400'), 1800);
+        }
+      }, 50);
+    };
+
+    window.updateTargetRate = function(rateVal) {
+      const rate = Math.min(7.0, Math.max(5.0, Number(rateVal)));
+      appState.dailyRate = rate;
+
+      document.getElementById('dailyRateSlider').value = rate;
+      document.getElementById('sliderRateValue').textContent = `${rate.toFixed(1)}%`;
+      document.getElementById('calcRateBadge').textContent = `${rate.toFixed(1)}% / day`;
+
+      document.querySelectorAll('.rate-preset-btn').forEach(btn => {
+        const bRate = Number(btn.dataset.rate);
+        if (Math.abs(bRate - rate) < 0.05) {
+          btn.className = 'rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-emerald-600/20 border-emerald-500 text-emerald-300';
+        } else {
+          btn.className = 'rate-preset-btn px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500';
+        }
+      });
+
+      renderDashboardKPIs();
+      renderCompoundingTable();
+      renderJournalCards();
+      triggerAutoSave();
+    };
+
+    window.toggleRateComparison = function(checked) {
+      uiState.compareRates = checked;
+      const panel = document.getElementById('rateComparisonPanel');
+      if (checked) {
+        panel.classList.remove('hidden');
+        renderRateComparisonCards();
+      } else {
+        panel.classList.add('hidden');
+      }
+    };
+
+    window.scrollToCalcDay = function(day) {
+      if (!day || day < 1 || day > 365) {
+        showToast('Enter a day number between 1 and 365');
+        return;
+      }
+      const row = document.getElementById(`calc-row-${day}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('bg-emerald-500/25');
+        setTimeout(() => row.classList.remove('bg-emerald-500/25'), 1600);
+      }
+    };
+
+    // =========================================================================
+    // 9. MILESTONE CELEBRATION & CONFETTI ANIMATION
+    // =========================================================================
+    function checkMilestonesCelebration() {
+      if (isRemoteUpdate) return;
+      const m = computeMetrics();
+      const hit = MILESTONES.find(ms => ms.day === m.completedCount);
+      if (hit && !appState.celebratedMilestones.includes(hit.day)) {
+        appState.celebratedMilestones.push(hit.day);
+        triggerAutoSave();
+        openMilestoneModal(hit, m);
+        launchConfetti();
+      }
+    }
+
+    function openMilestoneModal(milestone, metrics) {
+      document.getElementById('milestoneModalBadge').textContent = `DAY ${milestone.day} MILESTONE UNLOCKED`;
+      document.getElementById('milestoneModalTitle').textContent = milestone.title;
+      document.getElementById('milestoneModalDesc').textContent = milestone.desc;
+      document.getElementById('milestoneModalCapital').textContent = formatINR(metrics.currentCapital);
+      document.getElementById('milestoneModalDays').textContent = `${metrics.completedCount} / 365`;
+
+      const modal = document.getElementById('milestoneModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    window.closeMilestoneModal = function() {
+      const modal = document.getElementById('milestoneModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    function launchConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      canvas.classList.remove('hidden');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+
+      const colors = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#eab308', '#34d399'];
+      const particles = Array.from({ length: 140 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 10 + 5,
+        h: Math.random() * 6 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vy: Math.random() * 4 + 2.5,
+        vx: Math.random() * 3 - 1.5,
+        rot: Math.random() * 360,
+        vRot: Math.random() * 8 - 4
+      }));
+
+      let frames = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vRot;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rot * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+
+        frames++;
+        if (frames < 210) {
+          requestAnimationFrame(animate);
+        } else {
+          canvas.classList.add('hidden');
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // =========================================================================
+    // 10. CSV & JSON EXPORTS
+    // =========================================================================
+    window.exportToCSV = function() {
+      const schedule = generateCompoundingSchedule(appState.startingCapital, appState.dailyRate);
+      const headers = ['Day', 'Status', 'Target Margin (INR)', 'Target Profit (INR)', 'Actual P&L (INR)', 'Cumulative Capital (INR)', 'Trade Notes'];
+      const lines = [headers.join(',')];
+
+      let cumulative = appState.startingCapital;
+      for (let d = 1; d <= TOTAL_DAYS; d++) {
+        const entry = appState.days[String(d)] || { status: '', pnl: '', notes: '' };
+        const plan = schedule[d - 1];
+        const pnlVal = (entry.pnl !== '' && entry.pnl !== null && !isNaN(Number(entry.pnl))) ? Number(entry.pnl) : 0;
+        cumulative += pnlVal;
+
+        const cleanNotes = `"${String(entry.notes || '').replace(/"/g, '""')}"`;
+        lines.push([
+          d,
+          entry.status || 'pending',
+          plan.opening.toFixed(2),
+          plan.targetProfit.toFixed(2),
+          entry.pnl !== '' && entry.pnl !== null ? Number(entry.pnl).toFixed(2) : '',
+          cumulative.toFixed(2),
+          cleanNotes
+        ].join(','));
+      }
+
+      // UTF-8 BOM ensures Excel opens INR symbols cleanly
+      const blob = new Blob(["\uFEFF" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, `365-Day-Trading-Challenge-${new Date().toISOString().slice(0, 10)}.csv`);
+      showToast('CSV exported for Excel ✓');
+    };
+
+    window.exportToJSON = function() {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `365-Day-Trading-Backup-${new Date().toISOString().slice(0, 10)}.json`);
+      showToast('JSON backup downloaded ✓');
+    };
+
+    window.importFromJSON = function(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && typeof imported === 'object' && imported.days) {
+            appState.startingCapital = Number(imported.startingCapital) || 10000;
+            appState.dailyRate = Number(imported.dailyRate) || 6.0;
+            appState.days = imported.days;
+            appState.celebratedMilestones = imported.celebratedMilestones || [];
+            renderAll();
+            triggerAutoSave();
+            showToast('Backup restored successfully ✓');
+          } else {
+            showToast('Invalid JSON backup file');
+          }
+        } catch (err) {
+          showToast('Error reading JSON file');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // =========================================================================
+    // 11. MODALS & AUTH ACTIONS
+    // =========================================================================
+    window.openCapitalModal = function() {
+      document.getElementById('startingCapitalInput').value = appState.startingCapital;
+      const m = document.getElementById('capitalModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    };
+
+    window.closeCapitalModal = function() {
+      const m = document.getElementById('capitalModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    };
+
+    window.saveStartingCapital = function() {
+      const val = Number(document.getElementById('startingCapitalInput').value);
+      if (!val || val < 100) {
+        showToast('Please enter at least ₹100');
+        return;
+      }
+      appState.startingCapital = val;
+      closeCapitalModal();
+      renderAll();
+      triggerAutoSave();
+      showToast(`Starting capital updated to ${formatINR(val)}`);
+    };
+
+    window.openAuthModal = function() {
+      const m = document.getElementById('authModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    };
+
+    window.closeAuthModal = function() {
+      const m = document.getElementById('authModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    };
+
+    window.signInWithGoogle = async function() {
+      if (!fbAuth) {
+        showToast('Add your Firebase Config below first to enable Google Sign-In');
+        return;
+      }
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(fbAuth, provider);
+        showToast('Signed in with Google ✓ Syncing across devices!');
+        closeAuthModal();
+      } catch (err) {
+        showToast(`Sign-in note: ${err.message}`);
+      }
+    };
+
+    window.handleEmailAuth = async function(e) {
+      e.preventDefault();
+      if (!fbAuth) {
+        showToast('Add your Firebase Config below first to enable Email Sign-In');
+        return;
+      }
+      const email = document.getElementById('authEmailInput').value.trim();
+      const pass = document.getElementById('authPasswordInput').value;
+      try {
+        if (window._authMode === 'register') {
+          await createUserWithEmailAndPassword(fbAuth, email, pass);
+          showToast('Account created & synced ✓');
+        } else {
+          await signInWithEmailAndPassword(fbAuth, email, pass);
+          showToast('Signed in ✓ Syncing data...');
+        }
+        closeAuthModal();
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
+    window.handleSignOut = async function() {
+      if (!fbAuth) return;
+      await signOut(fbAuth);
+      await signInAnonymously(fbAuth);
+      showToast('Signed out');
+    };
+
+    window.saveCustomFirebaseConfig = function() {
+      const raw = document.getElementById('firebaseConfigTextarea').value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.apiKey || !parsed.projectId) throw new Error("Missing apiKey or projectId");
+        sessionStorage.setItem(FIREBASE_CFG_KEY, JSON.stringify(parsed));
+        showToast('Firebase config saved! Connecting...');
+        initFirebase();
+      } catch (err) {
+        showToast('Invalid JSON config. Check formatting.');
+      }
+    };
+
+    window.clearCustomFirebaseConfig = function() {
+      sessionStorage.removeItem(FIREBASE_CFG_KEY);
+      document.getElementById('firebaseConfigTextarea').value = '';
+      showToast('Custom Firebase config cleared');
+    };
+
+    // =========================================================================
+    // 12. PWA MANIFEST, SERVICE WORKER & INSTALL PROMPT
+    // =========================================================================
+    let deferredInstallPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+    });
+
+    window.handleInstallClick = async function() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast('App installed! Check your Home Screen / Desktop.');
+        }
+        deferredInstallPrompt = null;
+      } else {
+        const modal = document.getElementById('installGuideModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    };
+
+    function setupPWAManifestAndSW() {
+      // Dynamic SVG Icon
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#090d16"/><rect x="24" y="24" width="464" height="464" rx="96" fill="#111827" stroke="#10b981" stroke-width="16"/><path d="M128 340 L216 252 L276 312 L384 176" fill="none" stroke="#10b981" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/><path d="M316 176 H384 V244" fill="none" stroke="#f59e0b" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+
+      const manifest = {
+        name: "365-Day Trading & Compounding Challenge",
+        short_name: "365 Trade",
+        description: "365-Day Trading Journal & Daily Compounding Calculator",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#090d16",
+        theme_color: "#090d16",
+        orientation: "any",
+        icons: [
+          { src: iconUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+          { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+        ]
+      };
+
+      try {
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+      } catch (e) {}
+
+      // Register Service Worker for offline shell caching
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        const swCode = `
+          const CACHE_NAME = 'tc365-shell-v1';
+          self.addEventListener('install', (e) => {
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', (e) => {
+            e.waitUntil(clients.claim());
+          });
+          self.addEventListener('fetch', (e) => {
+            if (e.request.method !== 'GET') return;
+            e.respondWith(
+              fetch(e.request).catch(() => caches.match(e.request))
+            );
+          });
+        `;
+        try {
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(() => {});
+        } catch (e) {}
+      }
+    }
+
+    // =========================================================================
+    // 13. HELPERS & BOOTSTRAP
+    // =========================================================================
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'bg-slate-900/95 border border-slate-700 text-slate-100 text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-xl backdrop-blur-md transition-all transform translate-y-0 opacity-100';
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    window.addEventListener('resize', () => {
+      if (uiState.activeTab === 'analytics') {
+        drawEquityCurveCanvas();
+      }
+    });
+
+    // Initialize Application
+    window.addEventListener('DOMContentLoaded', () => {
+      loadInitialLocalState();
+      setupPWAManifestAndSW();
+      renderAll();
+      initFirebase();
+    });
+  </script>
+</body>
+</html>
